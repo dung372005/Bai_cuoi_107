@@ -12,7 +12,7 @@ Dùng một nút nhấn duy nhất để điều khiển hai LED. Phân biệt s
 
 Mặc định sau khi cấp nguồn: hai LED tắt, đang điều khiển LED1. LED đang chọn được in ra Serial (115200 baud) mỗi lần double click.
 
-## Pin Mapping (giả định board ESP32 DevKit)
+## Pin Mapping 
 
 | Thiết bị | GPIO | Ghi chú |
 |---|---|---|
@@ -24,19 +24,6 @@ Mức tích cực khai báo ở đầu `src/main.cpp` (`LED_ON_LEVEL`, `BTN_ON_L
 
 Lưu ý: GPIO2, GPIO5, GPIO15 là chân strapping của ESP32. Cách đấu trên (LED có trở, nút kéo xuống GND khi nhấn) không ảnh hưởng quá trình boot, nhưng đừng giữ nút khi reset/nạp code.
 
-## Cấu trúc dự án
-
-```
-.
-├── platformio.ini
-├── README.md
-├── .gitignore
-├── include/
-├── lib/
-│   └── LED/          # (hoặc LED.h trong include/) lớp LED của dự án gốc
-└── src/
-    └── main.cpp
-```
 
 ## Build & nạp
 
