@@ -1,56 +1,64 @@
 #include <Arduino.h>
-#include <OneButton.h>
 #include "LED.h"
+#include <OneButton.h>
 
-// Hai LED, một nút bấm duy nhất.
-//   single click : bật/tắt LED đang được chọn
-//   double click : chuyển LED đang điều khiển (LED1 <-> LED2)
-//   giữ nút      : LED đang chọn nháy, đổi trạng thái mỗi 200 ms
+// ---------- Pin mapping ----------
+constexpr uint8_t PIN_LED1 = 15;   // LED ngoài (test board)
+constexpr uint8_t PIN_LED2 = 2;    // LED built-in trên devboard
+constexpr uint8_t PIN_BTN  = 5;    // Nút bấm duy nhất
 
-LED leds[] = { LED(LED1_PIN, LED_ACT), LED(LED2_PIN, LED_ACT) };
-const uint8_t LED_COUNT = sizeof(leds) / sizeof(leds[0]);
-uint8_t current = 0;  // chỉ số LED đang được điều khiển
+// Mức logic bật LED / nhấn nút (giả định: LED active HIGH, nút nối GND)
+constexpr uint8_t LED_ON_LEVEL  = HIGH;
+constexpr uint8_t BTN_ON_LEVEL  = LOW;
 
-OneButton button(BTN_PIN, !BTN_ACT);
+LED led1(PIN_LED1, LED_ON_LEVEL);
+LED led2(PIN_LED2, LED_ON_LEVEL);
+LED *leds[2] = { &led1, &led2 };
+uint8_t sel = 0;                   // LED đang được điều khiển: 0 = LED1, 1 = LED2
 
-void onClick();
-void onDoubleClick();
-void onLongPress();
+// activeLow = true khi nút kéo chân xuống GND, pull-up nội được bật
+OneButton button(PIN_BTN, BTN_ON_LEVEL == LOW);
+
+void btnClick();
+void btnDoubleClick();
+void btnLongPress();
 
 void setup()
 {
     Serial.begin(115200);
-    for (uint8_t i = 0; i < LED_COUNT; i++) leds[i].begin();
 
-    button.attachClick(onClick);
-    button.attachDoubleClick(onDoubleClick);
-    button.attachLongPressStart(onLongPress);
+    led1.off();
+    led2.off();
 
-    Serial.println("Dang dieu khien: LED1");
+    button.setPressMs(1000);                 // giữ > 1 s mới tính là long press
+    button.attachClick(btnClick);            // single click: bật/tắt LED đang chọn
+    button.attachDoubleClick(btnDoubleClick);// double click: đổi LED đang chọn
+    button.attachLongPressStart(btnLongPress);// giữ nút: LED đang chọn nháy 200 ms
+
+    Serial.println("Dang dieu khien: LED1 (GPIO15)");
 }
 
 void loop()
 {
-    // Không dùng delay(): cả hai LED nháy độc lập và nút luôn được quét.
-    for (uint8_t i = 0; i < LED_COUNT; i++) leds[i].loop();
+    // Không dùng delay(): cả hai LED và nút đều chạy theo millis()
+    led1.loop();
+    led2.loop();
     button.tick();
 }
 
-void onClick()
+void btnClick()
 {
-    leds[current].flip();
-    Serial.printf("LED%u: %s\n", current + 1, leds[current].isOn() ? "ON" : "OFF");
+    leds[sel]->flip();
 }
 
-void onDoubleClick()
+void btnDoubleClick()
 {
-    // Chỉ đổi đối tượng điều khiển, LED cũ giữ nguyên trạng thái (kể cả đang nháy).
-    current = (current + 1) % LED_COUNT;
-    Serial.printf("Dang dieu khien: LED%u\n", current + 1);
+    sel ^= 1;                                // chuyển LED1 <-> LED2
+    Serial.println(sel == 0 ? "Dang dieu khien: LED1 (GPIO15)"
+                            : "Dang dieu khien: LED2 (GPIO2, built-in)");
 }
 
-void onLongPress()
+void btnLongPress()
 {
-    leds[current].blink(200);
-    Serial.printf("LED%u: BLINK 200ms\n", current + 1);
+    leds[sel]->blink(200);
 }
