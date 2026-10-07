@@ -1,57 +1,68 @@
-# Điều khiển 2 LED bằng 1 nút bấm (PlatformIO + OneButton)
+# Điều khiển 2 LED bằng 1 nút nhấn (ESP32 + PlatformIO + OneButton)
 
-Dự án nhúng dùng một nút bấm duy nhất để điều khiển hai LED, phân biệt thao tác bằng thư viện [OneButton](https://github.com/mathertel/OneButton). Mở rộng từ dự án điều khiển 1 LED bằng nút bấm ban đầu.
+Dùng một nút nhấn duy nhất để điều khiển hai LED. Phân biệt single click / double click / giữ nút bằng thư viện [OneButton](https://github.com/mathertel/OneButton).
 
 ## Chức năng
 
 | Thao tác | Hành vi |
 |---|---|
-| Single click | Bật/tắt LED đang được điều khiển. Nếu LED đang nháy thì dừng nháy và tắt |
-| Double click | Chuyển đối tượng điều khiển giữa LED1 và LED2. LED còn lại giữ nguyên trạng thái |
-| Nhấn giữ | LED đang được điều khiển nháy, đổi trạng thái mỗi 200 ms |
+| Double click | Chuyển LED đang được điều khiển: LED1 ⇄ LED2 |
+| Single click | Bật/tắt LED đang được điều khiển |
+| Nhấn giữ (> 1 s) | LED đang được điều khiển nháy chu kỳ 200 ms |
 
-Khi khởi động: cả hai LED tắt, đối tượng điều khiển mặc định là LED1.
+Mặc định sau khi cấp nguồn: hai LED tắt, đang điều khiển LED1. LED đang chọn được in ra Serial (115200 baud) mỗi lần double click.
 
-## Phần cứng
+## Pin Mapping (giả định board ESP32 DevKit)
 
-Board giả định: ESP32 DevKit (`esp32dev`).
-
-| Thành phần | GPIO | Ghi chú |
+| Thiết bị | GPIO | Ghi chú |
 |---|---|---|
-| LED1 (ngoài, trên test board) | 4 | Qua điện trở 220 Ω – 1 kΩ nối GND. Đổi bằng `LED1_PIN` |
-| LED2 (built-in) | 2 | LED có sẵn trên devboard |
-| Nút bấm | 5 | Nối giữa GPIO5 và GND, dùng pull-up nội |
+| LED1 | 15 | LED ngoài trên test board, anode → trở 330 Ω → GPIO15, cathode → GND |
+| LED2 | 2 | LED built-in trên devboard |
+| Nút nhấn | 5 | Một chân nối GPIO5, chân kia nối GND; dùng pull-up nội |
 
-Các chân và mức tích cực cấu hình bằng `build_flags` trong `platformio.ini` (`LED1_PIN`, `LED2_PIN`, `BTN_PIN`, `LED_ACT`, `BTN_ACT`), không cần sửa code.
+Mức tích cực khai báo ở đầu `src/main.cpp` (`LED_ON_LEVEL`, `BTN_ON_LEVEL`). Đổi nếu mạch của bạn khác.
 
-## Cấu trúc
+Lưu ý: GPIO2, GPIO5, GPIO15 là chân strapping của ESP32. Cách đấu trên (LED có trở, nút kéo xuống GND khi nhấn) không ảnh hưởng quá trình boot, nhưng đừng giữ nút khi reset/nạp code.
+
+## Cấu trúc dự án
 
 ```
 .
 ├── platformio.ini
-├── include/LED.h     # Lớp LED không chặn: on/off/flip/blink/loop
-└── src/main.cpp      # Khởi tạo, xử lý 3 sự kiện nút bấm
+├── README.md
+├── .gitignore
+├── include/
+├── lib/
+│   └── LED/          # (hoặc LED.h trong include/) lớp LED của dự án gốc
+└── src/
+    └── main.cpp
 ```
 
-## Cách hoạt động
-
-- `loop()` chỉ gọi `button.tick()` và `leds[i].loop()` cho từng LED, không dùng `delay()`. Hai LED nháy độc lập dựa trên `millis()`.
-- Biến `current` giữ chỉ số LED đang điều khiển. Double click đổi `current`, single click và nhấn giữ tác động lên `leds[current]`.
-- Ba callback: `attachClick`, `attachDoubleClick`, `attachLongPressStart`.
-
-## Build và nạp
+## Build & nạp
 
 ```bash
-git clone <URL-repo-của-bạn>
-cd led-onebutton-pio
-pio run -t upload
-pio device monitor
+pio run                  # build
+pio run -t upload        # nạp
+pio device monitor       # xem Serial
 ```
 
-Serial 115200 in ra LED đang điều khiển và trạng thái mỗi thao tác.
+## Kiểm thử
+
+| # | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Cấp nguồn | Hai LED tắt |
+| 2 | Single click | LED1 bật; click nữa thì tắt |
+| 3 | Double click | Serial báo chuyển sang LED2 |
+| 4 | Single click | LED2 (built-in) bật/tắt, LED1 giữ nguyên |
+| 5 | Giữ nút > 1 s | LED đang chọn nháy 200 ms |
+| 6 | Single click khi đang nháy | LED dừng nháy, chuyển ON/OFF |
 
 ## Lưu ý
 
-- Do đăng ký double click, OneButton đợi hết cửa sổ click (mặc định 400 ms) mới xác nhận single click, nên LED đổi trạng thái hơi trễ. Chỉnh bằng `button.setClickMs(...)`.
-- Ngưỡng nhấn giữ mặc định 800 ms, chỉnh bằng `button.setPressMs(...)`.
-- Trên ESP32, tránh dùng GPIO1/GPIO3 (UART0) cho LED nếu còn dùng Serial.
+- Do đã đăng ký double click, single click được xác nhận sau khoảng 400 ms (cửa sổ chờ click thứ hai của OneButton), nên LED phản hồi hơi trễ. Chỉnh bằng `button.setClickMs(...)`.
+- Không dùng `delay()`, mọi thứ chạy không chặn trong `loop()`.
+- Cần `LED.h` của dự án gốc có các phương thức `off()`, `flip()`, `blink(ms)`, `loop()`.
+
+## Link dự án
+
+<điền link GitHub public tại đây>
