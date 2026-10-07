@@ -1,8 +1,8 @@
 # Điều khiển 2 LED bằng 1 nút nhấn (ESP32 + PlatformIO + OneButton)
-<img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/78386736-ad10-4795-b3f5-7a2ae68b61db" />
-
-
-*Mạch thực tế: ESP32 DevKit trên breadboard, LED ngoài, LED built-in trên board và một nút nhấn.*
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/78386736-ad10-4795-b3f5-7a2ae68b61db" alt="Mạch thực tế ESP32 trên breadboard" width="250"><br>
+  <em>Mạch thực tế: ESP32 DevKit trên breadboard, LED ngoài, LED built-in trên board và một nút nhấn.</em>
+</p>
 
 Dùng một nút nhấn duy nhất để điều khiển hai LED. Phân biệt single click / double click / giữ nút bằng thư viện [OneButton](https://github.com/mathertel/OneButton). Dự án phát triển từ dự án gốc điều khiển 1 LED bằng nút nhấn (ON/OFF bằng single click, nháy LED bằng nhấn giữ).
 
