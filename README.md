@@ -1,6 +1,10 @@
 # Điều khiển 2 LED bằng 1 nút nhấn (ESP32 + PlatformIO + OneButton)
 
-Dùng một nút nhấn duy nhất để điều khiển hai LED. Phân biệt single click / double click / giữ nút bằng thư viện [OneButton](https://github.com/mathertel/OneButton).
+![Mạch thực tế trên breadboard: ESP32 DevKit, 2 LED và 1 nút nhấn](docs/hardware.png)
+
+*Mạch thực tế: ESP32 DevKit trên breadboard, LED ngoài, LED built-in trên board và một nút nhấn.*
+
+Dùng một nút nhấn duy nhất để điều khiển hai LED. Phân biệt single click / double click / giữ nút bằng thư viện [OneButton](https://github.com/mathertel/OneButton). Dự án phát triển từ dự án gốc điều khiển 1 LED bằng nút nhấn (ON/OFF bằng single click, nháy LED bằng nhấn giữ).
 
 ## Chức năng
 
@@ -12,25 +16,41 @@ Dùng một nút nhấn duy nhất để điều khiển hai LED. Phân biệt s
 
 Mặc định sau khi cấp nguồn: hai LED tắt, đang điều khiển LED1. LED đang chọn được in ra Serial (115200 baud) mỗi lần double click.
 
-## Pin Mapping 
+## Phần cứng
 
-| Thiết bị | GPIO | Ghi chú |
-|---|---|---|
-| LED1 | 15 | LED ngoài trên test board, anode → trở 330 Ω → GPIO15, cathode → GND |
-| LED2 | 2 | LED built-in trên devboard |
-| Nút nhấn | 5 | Một chân nối GPIO5, chân kia nối GND; dùng pull-up nội |
+- 1 board ESP32 DevKit (`esp32doit-devkit-v1`)
+- 1 LED ngoài (LED1) + điện trở hạn dòng (khoảng 330 Ω)
+- 1 LED built-in trên board (LED2)
+- 1 nút nhấn, breadboard, dây nối
 
-Mức tích cực khai báo ở đầu `src/main.cpp` (`LED_ON_LEVEL`, `BTN_ON_LEVEL`). Đổi nếu mạch của bạn khác.
+### Pin Mapping
 
-Lưu ý: GPIO2, GPIO5, GPIO15 là chân strapping của ESP32. Cách đấu trên (LED có trở, nút kéo xuống GND khi nhấn) không ảnh hưởng quá trình boot, nhưng đừng giữ nút khi reset/nạp code.
+Khai báo trong `platformio.ini`, mục `build_flags`.
 
+| Macro | esp32doit-devkit-v1 | esp32c3_super_mini | Ghi chú |
+|---|---|---|---|
+| `LED_PIN` / `LED_ACT` (LED1, ngoài) | GPIO15 / HIGH | GPIO4 / HIGH | Anode → trở → GPIO, cathode → GND |
+| `LED2_PIN` / `LED2_ACT` (LED2, built-in) | GPIO2 / HIGH | GPIO8 / LOW | LED có sẵn trên board |
+| `BTN_PIN` / `BTN_ACT` (nút) | GPIO5 / LOW | GPIO9 / LOW | Nối GPIO với GND, dùng pull-up nội |
+
+Chân của `esp32c3_super_mini` (LED1 = GPIO4) là giả định, đổi theo mạch thực tế.
+
+Lưu ý: trên ESP32 DevKit, GPIO2/5/15 là chân strapping. Cách đấu trên vẫn ổn nhưng đừng giữ nút lúc reset hoặc nạp code.
+
+
+## Cách hoạt động
+
+1. `platformio.ini` định nghĩa chân và mức tích cực cho từng board qua `build_flags`.
+2. `main.cpp` tạo hai đối tượng `LED` (`led1`, `led2`) và một mảng con trỏ `leds[]`; biến `sel` cho biết LED nào đang được điều khiển.
+3. OneButton gọi callback tương ứng: `btnClick()` → `flip()`, `btnDoubleClick()` → đổi `sel`, `btnLongPress()` → `blink(200)`.
+4. `loop()` chỉ gọi `led1.loop()`, `led2.loop()`, `button.tick()`. Không dùng `delay()`, mọi thứ chạy theo `millis()`.
 
 ## Build & nạp
 
 ```bash
-pio run                  # build
-pio run -t upload        # nạp
-pio device monitor       # xem Serial
+pio run -e esp32doit-devkit-v1             # build
+pio run -e esp32doit-devkit-v1 -t upload   # nạp
+pio device monitor                         # xem Serial
 ```
 
 ## Kiểm thử
@@ -47,9 +67,9 @@ pio device monitor       # xem Serial
 ## Lưu ý
 
 - Do đã đăng ký double click, single click được xác nhận sau khoảng 400 ms (cửa sổ chờ click thứ hai của OneButton), nên LED phản hồi hơi trễ. Chỉnh bằng `button.setClickMs(...)`.
-- Không dùng `delay()`, mọi thứ chạy không chặn trong `loop()`.
-- Cần `LED.h` của dự án gốc có các phương thức `off()`, `flip()`, `blink(ms)`, `loop()`.
+- Nếu đang nháy LED1 rồi double click sang LED2, LED1 vẫn tiếp tục nháy.
+- Cần `LED.h` có các phương thức `off()`, `flip()`, `blink(ms)`, `loop()`.
 
 ## Link dự án
 
-<https://github.com/dung372005/Bai_cuoi_107.git>
+<>
