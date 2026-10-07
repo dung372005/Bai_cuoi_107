@@ -1,6 +1,6 @@
 # Điều khiển 2 LED bằng 1 nút nhấn (ESP32 + PlatformIO + OneButton)
+<img width="591" height="1280" alt="image" src="https://github.com/user-attachments/assets/78386736-ad10-4795-b3f5-7a2ae68b61db" />
 
-![Mạch thực tế trên breadboard: ESP32 DevKit, 2 LED và 1 nút nhấn](docs/hardware.png)
 
 *Mạch thực tế: ESP32 DevKit trên breadboard, LED ngoài, LED built-in trên board và một nút nhấn.*
 
